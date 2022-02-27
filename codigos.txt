@@ -1,18 +1,15 @@
----
-title: "Clusterização usando K-Médias, K-Medóides e Agrupamento Hierárquico"
-
-output: html_document
----
+"Clusterização usando K-Médias, K-Medóides e Agrupamento Hierárquico"
 
 
-#### **OBJETIVO:**
+OBJETIVO:
 Agrupamento de dados (filmes) sem uma classe definida para encontrar insights neles que possam ser usados para resolver problemas de negócios (neste caso, seleção e criação de conteúdo).
 
-#### **DADOS:**
+DADOS:
 Dados públicos disponibilizados pelo IMDb no site do Kaggle.
 
 
-#### **PARTE 1: CARREGAMENTO DE PACOTES & DATASET**
+PARTE 1: CARREGAMENTO DE PACOTES & DATASET
+
 ```{r}
 library(readxl)
 library(dplyr)
@@ -30,7 +27,8 @@ Base_para_clustering_filmes <- read_excel("Base-para-clustering-filmes.xlsx")
 ```
 
 
-#### **PARTE 2: EXPLORAÇÃO E PADRONIZAÇÃO DOS DADOS**
+PARTE 2: EXPLORAÇÃO E PADRONIZAÇÃO DOS DADOS
+
 ```{r}
 str(Base_para_clustering_filmes)
 ```
@@ -67,10 +65,9 @@ Base_combinada = cbind(novoimdb[,c(-1,-2, -3, -4)], Gen1dummy, Gen2dummy)
 dadosnorm = data.frame(scale(Base_combinada))
 ```
 
+PARTE 3: MODELAGEM DOS DADOS
 
-#### **PARTE 3: MODELAGEM DOS DADOS**
-
-##### **AGRUPAMENTO COM K-MÉDIAS**
+AGRUPAMENTO COM K-MÉDIAS
 
 Encontrando o nº ideal de Clusters com a métrica Silhouette
 ```{r}
@@ -79,7 +76,6 @@ plot(silhuetemz)
 ```
 
 Número ideal de classes igual a 10
-
 ```{r}
 silhuetemz$data
 ```
@@ -110,7 +106,8 @@ fviz_cluster(agrkmeans, data = dadosnorm)
 Kmedias = agrkmeans$cluster
 ```
 
-##### **AGRUPAMENTO COM K-MEDÓIDES**
+AGRUPAMENTO COM K-MEDÓIDES
+
 ```{r}
 clusterspam = pam(dadosnorm, 10)
 plot(clusterspam)
@@ -131,9 +128,9 @@ clusterspam$clusinfo
 kmedoides = clusterspam$clustering
 ```
 
-##### **AGRUPAMENTOS HIERÁRQUICOS (AH)**
+AGRUPAMENTOS HIERÁRQUICOS (AH)
 
-**USANDO SINGLE LINKAGE**
+USANDO SINGLE LINKAGE
 ```{r}
 d = dist(dadosnorm, method = "euclidean")
 fit = hclust(d, method = "single")
@@ -150,7 +147,7 @@ plot(sssi)
 mean(sssi[,3])
 ```
 
-**USANDO AVERAGE LINKAGE**
+USANDO AVERAGE LINKAGE
 ```{r}
 d = dist(dadosnorm, method = "euclidean")
 fita = hclust(d, method = "average")
@@ -167,8 +164,7 @@ plot(ssav)
 mean(ssav[,3])
 ```
 
-
-**USANDO COMPLETE LINKAGE**
+USANDO COMPLETE LINKAGE
 ```{r}
 d = dist(dadosnorm, method = "euclidean")
 fitc = hclust(d, method = "complete")
@@ -185,7 +181,7 @@ plot(ssco)
 mean(ssco[,3])
 ```
 
-**USANDO WARD.D**
+USANDO WARD.D
 ```{r}
 d = dist(dadosnorm, method = "euclidean")
 fitw = hclust(d, method = "ward.D")
@@ -202,7 +198,7 @@ plot(sscw)
 mean(sscw[,3])
 ```
 
-#### **PARTE 4: COMBINANDO E SALVANDO TUDO**
+PARTE 4: COMBINANDO E SALVANDO TUDO
 ```{r}
 clusterizacao= cbind(novoimdb, Kmedias, kmedoides, groups, groupa, groupc, groupw)
 ```
