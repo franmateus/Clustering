@@ -1,8 +1,6 @@
 ---
 title: "Clusterização usando K-Médias, K-Medóides e Agrupamento Hierárquico"
 
-author: "Autora: Maria Francinete Mateus"
-
 output: html_document
 ---
 
