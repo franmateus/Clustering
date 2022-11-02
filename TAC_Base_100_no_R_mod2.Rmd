@@ -1,0 +1,241 @@
+---
+title: "Clusterização usando K-Médias, K-Medóides e Agrupamento Hierárquico"
+
+author: "Autora: Maria Francinete Mateus"
+
+output: html_document
+---
+
+
+#### **OBJETIVO:**
+Agrupar 100 filmes produzidos (total ou parcialmente) pelo Reino Unido, para encontrar insights que possam ser usados no processo de seleção e criação de conteúdo; neste caso, para compor um guia de viagens inspiradas no cinema.
+
+
+#### **DADOS:**
+Dados públicos disponibilizados pelo IMDb no site do Kaggle. Um dos problemas desse tipo de base de dados é que cada filme pode ter até 3 tipos de gêneros diferentes, o que dificulta a separação e classificação única deles usando ferramentas mais simples (por exemplo, o Excel).
+
+
+#### **PARTE 1: CARREGAMENTO DE PACOTES & DATASET**
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(dummies)
+library(corrplot)
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(fpc)
+```
+
+```{r}
+Base_para_clustering_filmes <- read_excel("Base-para-clustering-filmes.xlsx")
+```
+
+
+#### **PARTE 2: EXPLORAÇÃO E PADRONIZAÇÃO DOS DADOS**
+```{r}
+str(Base_para_clustering_filmes)
+```
+
+```{r}
+head(Base_para_clustering_filmes)
+```
+
+```{r}
+summary(Base_para_clustering_filmes)
+```
+
+```{r}
+any(is.na(Base_para_clustering_filmes))
+```
+
+```{r}
+novoimdb= data.frame(Base_para_clustering_filmes, row.names = 1)
+```
+
+```{r}
+Gen1dummy = dummy(novoimdb$Gen1)
+```
+
+```{r}
+Gen2dummy = dummy(novoimdb$Gen2)
+```
+
+```{r}
+Base_combinada = cbind(novoimdb[,c(-1,-2, -3, -4)], Gen1dummy, Gen2dummy)
+```
+
+```{r}
+dadosnorm = data.frame(scale(Base_combinada))
+```
+
+
+#### **PARTE 3: MODELAGEM DOS DADOS**
+
+##### **AGRUPAMENTO COM K-MÉDIAS**
+
+Encontrando o nº ideal de Clusters com a métrica Silhouette
+```{r}
+silhuetemz = fviz_nbclust(dadosnorm, kmeans, method = c("silhouette", "wss", "gap_stat"))
+plot(silhuetemz)
+```
+
+Número ideal de classes igual a 10
+
+```{r}
+silhuetemz$data
+```
+
+Aplicando o K-Médias com 10 classes, cujo Silhouette é 0.2453604
+```{r}
+agrkmeans = kmeans(dadosnorm, 10)
+```
+
+```{r}
+agrkmeans$size
+```
+
+```{r}
+barplot(agrkmeans$size, main = "Tamanho dos grupos usando K-Médias", col = "blue")
+```
+
+K-Médias apresenta índice Silhouette de 0.245 e distribuição desproporcional dos filmes entre os grupos: 10, 9, 2, 9, 1, 21, 23, 9, 7 e 9. 
+
+```{r}
+par(mfrow=c(1,1))
+clusplot(dadosnorm, agrkmeans$cluster, color = TRUE, labels = 2, lines = 0)
+```
+
+```{r}
+fviz_cluster(agrkmeans, data = dadosnorm)
+```
+
+```{r}
+Kmedias = agrkmeans$cluster
+```
+
+##### **AGRUPAMENTO COM K-MEDÓIDES**
+```{r}
+clusterspam = pam(dadosnorm, 10)
+plot(clusterspam)
+```
+
+```{r}
+par(mfrow=c(2,2))
+clusterspam = pam(dadosnorm, 10)
+ssp = silhouette(clusterspam$cluster, dist(dadosnorm))
+mean(ssp[,3])
+```
+
+K-Medóides apresenta índice Silhouette de 0.30 e, comparado ao K-Médias, uma distribuição menos desproporcional dos filmes entre os grupos: 34, 10, 5, 6, 7, 9, 7, 9, 11 e 2. 
+
+```{r}
+clusterspam$clusinfo
+```
+
+```{r}
+kmedoides = clusterspam$clustering
+```
+
+##### **AGRUPAMENTOS HIERÁRQUICOS (AH)**
+
+**USANDO SINGLE LINKAGE**
+```{r}
+d = dist(dadosnorm, method = "euclidean")
+fit = hclust(d, method = "single")
+
+par(mfrow=c(1,1))
+plot(fit)
+groups = cutree(fit, k=10)
+rect.hclust(fit, k=10, border = 2:12)
+```
+
+```{r}
+sssi = silhouette(groups, dist(dadosnorm))
+plot(sssi)
+mean(sssi[,3])
+```
+
+Single Linkage apresenta índice Silhouette de 0.21 e grupos muito desproporcionais: 84, 5, 1, 1, 3, 1, 1, 1, 2, 1. 
+
+**USANDO AVERAGE LINKAGE**
+```{r}
+d = dist(dadosnorm, method = "euclidean")
+fita = hclust(d, method = "average")
+
+par(mfrow=c(1,1))
+plot(fita)
+groupa = cutree(fita, k=10)
+rect.hclust(fita, k=10, border= 2:12)
+```
+
+```{r}
+ssav = silhouette(groupa, dist(dadosnorm))
+plot(ssav)
+mean(ssav[,3])
+```
+
+Average Linkage apresenta índice silhouette de 0.22 e grupos também desproporcionais: 80, 1, 9, 1, 3, 1, 1, 1, 2 e 1. 
+
+**USANDO COMPLETE LINKAGE**
+```{r}
+d = dist(dadosnorm, method = "euclidean")
+fitc = hclust(d, method = "complete")
+
+par(mfrow=c(1,1))
+plot(fitc)
+groupc = cutree(fitc, k=10)
+rect.hclust(fitc, k=10, border= 2:12)
+```
+
+```{r}
+ssco = silhouette(groupc, dist(dadosnorm))
+plot(ssco)
+mean(ssco[,3])
+```
+
+Complete Linkage apresenta índice silhouette de 0.25 e grupos também desproporcionais: 88, 1, 1, 3, 1, 1, 1, 2, 1 e 1. 
+
+**USANDO WARD.D**
+```{r}
+d = dist(dadosnorm, method = "euclidean")
+fitw = hclust(d, method = "ward.D")
+
+par(mfrow=c(1,1))
+plot(fitw)
+groupw = cutree(fitw, k=10)
+rect.hclust(fitw, k=10, border= 2:12)
+```
+
+O dendrograma do ward.D mostra um certo equilíbrio na divisão dos 100 filmes entre os 10 grupos, o que não foi visto nos gráficos dos modelos anteriores.
+
+```{r}
+sscw = silhouette(groupw, dist(dadosnorm))
+plot(sscw)
+mean(sscw[,3])
+```
+
+Ward.D apresenta índice silhouette de 0.31 e os grupos com distribuição mais proporcional dentre todos os métodos aplicados: 17, 19, 5, 9, 11, 9, 7, 7, 9 e 7. 
+
+
+#### **PARTE 4: CONCLUSÃO**
+O melhor agrupamento de classes dos 100 filmes foi encontrado usando o Agrupamento Hierárquico (AH) com a medida **ward.D**, cujo índice Silhouette foi de **0.31**. O ranking final ficou assim:
+
+- 1º) AH **Ward.D** = 0.31
+- 2º) **K-Medóides** = 0.30
+- 3º) AH **Complete Linkage** = 0.251
+- 4º) **K-Médias** = 0.245
+- 5º) AH **Average Linkage** = 0.22
+- 6º) AH **Single Linkage** = 0.21
+
+Combinando e salvando os resultados dos algoritmos com o arquivo original dos filmes da IMDb, para análise mais aprofundada dos agrupamentos e para descobrir padrões e insights que possam ser usados no processo de seleção e criação de conteúdo.
+
+```{r}
+clusterizacao= cbind(novoimdb, Kmedias, kmedoides, groups, groupa, groupc, groupw)
+```
+
+```{r}
+write_delim(clusterizacao, "Agrupamentos dos 100 filmes pelos algoritmos de clusterização", delim = ";")
+getwd()
+```
